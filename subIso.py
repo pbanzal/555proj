@@ -1,6 +1,11 @@
 import random;
 import copy;
 import os;
+import numpy as np;
+
+G1File = "/Users/Suvidha/Desktop/G1.txt"
+G2File = "/Users/Suvidha/Desktop/G2.txt"
+G2G1Map = "/Users/Suvidha/Desktop/G2G1Map.txt"
 
 # creation of empty graph
 def createGraph(graphSize):
@@ -57,6 +62,16 @@ def printGraph(G):
   print len(G), len(G);
   for i in xrange(len(G)):
     print G[i];
+    
+# read in the graph from standard input
+def readGraph(fileName):
+    matrix = np.loadtxt(fileName,dtype=int)
+    G = matrix.tolist()
+    return(G)
+
+# Save graph into a file  
+def writeGraph(G,fileName):
+    np.savetxt(fileName,G,fmt="%d")
 
 # create own graph for testing the code
 # graphs are randomly created
@@ -77,15 +92,12 @@ def createGraphForTesting():
     g1g2Mapping[g2g1Mapping[i]] = i;
 
   G2 = createSubGraph(G1, g2g1Mapping);
-
-  #printGraph(G1);
-  #print "\n",g2g1Mapping;
   print "Created graph G1 of size", g1Size, "and G2 of size", g2Size;
-  return (G1, G2, g2g1Mapping);
-
-# read in the graph from standard input
-def readInGraph():
-  return;
+  
+  writeGraph(G1,G1File)
+  writeGraph(G2,G2File)
+  writeGraph(g2g1Mapping,G2G1Map)
+ 
 
 # bitcommit a given graph completely
 # return seed Matrix, commit Matrix
@@ -126,8 +138,8 @@ def uncommit(commitH, seedMat, mapping):
       commitH[i][j] = commitH[i][j] ^ random.getrandbits(32);
 
 # Prove that the code is right and is working
-def prove():
-  (G1, G2, g2g1Mapping) = createGraphForTesting();
+def prove(G1,G2,g2g1Mapping,isInteractive=True):
+  #(G1, G2, g2g1Mapping) = createGraphForTesting();
 
   g1Size = len(G1);
   g2Size = len(G2);
@@ -136,7 +148,7 @@ def prove():
 
   H = permuteGraph(G1, g1hMapping);
   (seedMat, commitH) = bitCommit(H);
-
+  count=0
   #printGraph(seedMat);
   #printGraph(commitH);
   #printGraph(H);
@@ -145,19 +157,32 @@ def prove():
   for i in xrange(g2Size):
     g2hMapping.append(g1hMapping[g2g1Mapping[i]]);
 
-  oldCommitH = copy.deepcopy(commitH);
+  oldCommitH = copy.deepcopy(commitH);  
   for run in xrange(100):
     random.seed(os.urandom(10));
-    if (random.random() < 0.5):
+    if(isInteractive == True):
+        while(1):
+        
+            input = int(raw_input("Please enter 0/1: "))
+            if(input == 0 or input == 1):
+                break;
+        
+    else:
+        input = random.randint(0,1)
+    
+    if(input == 1):
+      count = count+1
       uncommit(commitH, seedMat, g2hMapping);
       for i in xrange(g2Size):
         x = g2hMapping[i];
         for j in xrange(g2Size):
           y = g2hMapping[j];
           if (G2[i][j] != commitH[x][y]):
-            print "ProblemA", G2[i][j], commitH[x][y];
-            break;
+            print "Problem in proving subgraph isomorphism between G2 and H"
+            print "G2[{0}][{1}]= {2} != commit[{3}][{4}]= {5} where vertices {0},{1} in G2 maps to {6},{7} in G1 which maps to {3},{4} in H".format(i,j,G2[i][j],x,y,commitH[x][y],g2g1Mapping[i],g2g1Mapping[j])
+            return(0);
       print "Verified H matches with subGraph G2";
+    
     else:
       uncommit(commitH, seedMat, g1hMapping);
       for i in xrange(g1Size):
@@ -165,12 +190,34 @@ def prove():
         for j in xrange(g1Size):
           y = g1hMapping[j];
           if (G1[i][j] != commitH[x][y]):
-            print "ProblemB", G1[i][j], commitH[x][y];
-            break;
+            print "Problem in proving isomorphism between G1 and H", G1[i][j], commitH[x][y];
+            return(0);
       print "Verified H matches with Graph G1";
     commitH = copy.deepcopy(oldCommitH);
+  
+  print "Challenge G2,H is choosen {0} times".format(count)
+  print "Challenge G1,H is chosen {0} times".format(100-count)
+  return(1)
 
-
+def main():
+    createGraphForTesting();
+    G1 = readGraph(G1File)
+    G2 = readGraph(G2File)
+    
+    #Honest
+    g2g1Mapping = readGraph(G2G1Map) 
+    
+    #Cheat : No Knowlege of mapping
+    #mapping = range(len(G1))
+    #random.shuffle(mapping)
+    #g2g1Mapping =mapping[:len(G2)]
+    
+    if(prove(G1,G2,g2g1Mapping,False) == 0):
+        print("Conclusion : Peggy COULD NOT convince Victor of her Subgraph Isomorphic Knowledge between G1 and G2")
+    else:
+        print("In all runs, Peggy convinced Victor of her Subgraph Isomorphic Knowledge between G1 and G2 ")
+    
+    
 # To test if permute function works properly
 # Can be used for other testing purpose
 def test1():
@@ -199,4 +246,4 @@ def test1():
           print "ProblemA",i,j;
 
 # Start program :)
-prove();
+main()
