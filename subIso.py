@@ -58,6 +58,18 @@ def createRevMapping(mapping, size) :
     revMapping[mapping[i]] = i
   return revMapping
 
+# test if one graph is an isomorphic
+# subgraph of the other via the given
+# mapping
+def graphIso(G1, G2, mapping):
+  for i in xrange(len(G1)):
+    x = mapping[i]
+    for j in xrange(len(G1)):
+      y = mapping[j]
+      if (G1[i][j] != G2[x][y]):
+        return False
+  return True
+
 # print the matrix neatly
 def printGraph(G):
   print len(G), len(G)
@@ -171,6 +183,19 @@ def MapIsoSubgraph(in_file, size, out_file, map_file):
   print 'Output mapping written to: ' + map_file.name
 
 def Prove(G1_file, G2_file, challenges_file, g2g1Mapping_file):
+  
+  # Make fake G2 -> G1 mapping
+  # for when Peggy is cheating!
+  def guess_mapping(G1, G2):
+    g2g1Mapping = []
+    for i in xrange(len(G2)):
+      while True:
+        guess = random.randint(0,len(G1)-1)
+        if guess not in g2g1Mapping:
+          break
+      g2g1Mapping.append(guess)
+    return g2g1Mapping
+
   print 'Input whole graph file: ' + G1_file.name
   G1 = readGraph(G1_file)
   print 'Input whole graph size: ' + str(len(G1)) + ' nodes'
@@ -180,8 +205,13 @@ def Prove(G1_file, G2_file, challenges_file, g2g1Mapping_file):
   if len(G2) > len(G1):
     print 'Error: subgraph size > whole graph size!'
     exit()
-  print 'Input graph mapping file: ' + g2g1Mapping_file.name
-  g2g1Mapping = readGraph(g2g1Mapping_file)
+
+  if g2g1Mapping_file is not None:
+    print 'Input graph mapping file: ' + g2g1Mapping_file.name
+    g2g1Mapping = readGraph(g2g1Mapping_file)
+  else:
+    print '!!! Peggy: Guessing mapping between whole graph and the subgraph.'
+    g2g1Mapping = guess_mapping(G1, G2)
 
   print 'Input challenges file: ' + challenges_file.name
   challenges = [x for row in readGraph(challenges_file) for x in row]
@@ -206,31 +236,18 @@ def Prove(G1_file, G2_file, challenges_file, g2g1Mapping_file):
     
     if challenge == 1:
       print "Victor: Challenge is G2 is isomorphic to a subgraph of H."
-
       print 'Peggy: Uncommiting corresponding nodes of G2 in H.'
       uncommit(commitH, seedMat, g2hMapping)
-
-      for i in xrange(len(G2)):
-        x = g2hMapping[i]
-        for j in xrange(len(G2)):
-          y = g2hMapping[j]
-          if (G2[i][j] != commitH[x][y]):
-            print "!!! Victor: Unable to prove subgraph isomorphism between G2 and H!"
+      if not graphIso(G2, H, g2hMapping):
+        print "!!! Victor: Unable to prove subgraph isomorphism between G2 and H!"
       else: 
         print "Victor: Correctly verified G2 is isomorphic to a subgraph of H."
-
     else:
       print "Victor: Challenge is G1 is isomorphic to H."
-
       print 'Peggy: Uncommiting all nodes of H.'
       uncommit(commitH, seedMat, g1hMapping)
-
-      for i in xrange(len(G1)):
-        x = g1hMapping[i]
-        for j in xrange(len(G1)):
-          y = g1hMapping[j]
-          if (G1[i][j] != commitH[x][y]):
-            print "!!! Victor: Unable to prove isomorphism between G1 and H!"
+      if not graphIso(G1, H, g1hMapping):
+        print "!!! Victor: Unable to prove isomorphism between G1 and H!"
       else: 
         print "Victor: Correctly verified G1 is isomorphic to H."
      
@@ -246,10 +263,7 @@ def main():
     elif args.command == 'MapIsoSubgraph':
       MapIsoSubgraph(args.in_file, args.size, args.out_file, args.map_file)
     else:
-      if args.map_file is None:
-        Cheat(args.graph_file, args.subgraph_file, args.chal_file)
-      else:
-        Prove(args.graph_file, args.subgraph_file, args.challenges_file, args.map_file)
+      Prove(args.graph_file, args.subgraph_file, args.challenges_file, args.map_file)
     
 # Start program :)
 main()
