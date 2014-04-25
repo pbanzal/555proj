@@ -9,6 +9,7 @@ import numpy as np
 #  Graph Functions:
 
 # creation of empty graph
+# This function creates empty graphs of a given size
 def createGraph(graphSize):
   G = []
   for i in xrange(graphSize):
@@ -18,6 +19,8 @@ def createGraph(graphSize):
   return G
 
 # randomly creating edges
+# Creates random edges in an empty graph.
+# Probability of creating an edge is 0.5
 def createRandomEdges(G, graphSize):
   for i in xrange(graphSize):
     for j in xrange(i+1, graphSize):
@@ -26,6 +29,8 @@ def createRandomEdges(G, graphSize):
   return G
 
 # copy part of a graph
+# G2 is copied into G1. Normally G2
+# should be a smaller graph than G1.
 def copyGraph(G1, G2, g2Size):
   for i in xrange(g2Size):
     for j in xrange(g2Size):
@@ -33,6 +38,11 @@ def copyGraph(G1, G2, g2Size):
   return G1
 
 # create subgraph from given mapping
+# Returns a new graph, created out of G.
+# Mapping is used to map edges of the output graph
+# with the input graph. The value of index i in
+# the mapping array is the vertex of output graph.
+# The value of mapping[i] is the vertex of input graph.
 def createSubGraph(G, mapping):
   g2Size = len(mapping)
   G2 = createGraph(g2Size)
@@ -41,8 +51,11 @@ def createSubGraph(G, mapping):
       G2[i][j] = G[mapping[i]][mapping[j]]
   return G2
 
-# permuate a given graph using the mapping
-# index in G maps to mapping[index] in new graph
+# Permuate a given graph using the mapping.
+# Mapping is used to map edges of the output graph
+# with the input graph. The value of index i in
+# the mapping array is the vertex of output graph.
+# The value of mapping[i] is the vertex of input graph.
 def permuteGraph(G, mapping):
   newG = createGraph(len(G[0]))
   itr = xrange(len(mapping))
@@ -52,15 +65,18 @@ def permuteGraph(G, mapping):
   return newG
 
 # Create a rev mapping from any given mapping
+# Given a mapping between G1 -> G2, return a mapping
+# G2 -> G1.
 def createRevMapping(mapping, size) :
   revMapping = range(size)
   for i in xrange(size):
     revMapping[mapping[i]] = i
   return revMapping
 
-# test if one graph is an isomorphic
-# subgraph of the other via the given
-# mapping
+# Tester function. It tests if subgraph in G1
+# is isomorphic to G2. G2 has to be smaller graph
+# of the two. Mapping maps vertes of G2 to G1,
+# i.e G2 -> G1
 def graphIso(G1, G2, mapping):
   for i in xrange(len(G1)):
     x = mapping[i]
@@ -75,14 +91,14 @@ def printGraph(G):
   print len(G), len(G)
   for i in xrange(len(G)):
     print G[i]
-    
+
 # read in the graph from standard input
 def readGraph(fhandle):
     matrix = np.loadtxt(fhandle,dtype=int)
     G = matrix.tolist()
     return G
 
-# Save graph into a file  
+# Save graph into a file
 def writeGraph(G,fhandle):
     np.savetxt(fhandle,G,fmt="%d")
 
@@ -91,7 +107,9 @@ def writeGraph(G,fhandle):
 # Bit Commitment code
 
 # bitcommit a given graph completely
-# return seed Matrix, commit Matrix
+# returns seed Matrix and commit Matrix
+# OS random number generator is used to achieve
+# cryptographic random numbers.
 def bitCommit(H):
   hSize = len(H)
   seedMat = []
@@ -109,7 +127,7 @@ def bitCommit(H):
   return (seedMat, commitH)
 
 # uncommit the graph.
-# commitH gets modified
+# input commitH gets uncommitted inplace
 # mapping is used to only uncomit specific part of given graph.
 # if mapping maps to all the nodes in given graph then whole graph gets
 # uncommited
@@ -134,7 +152,7 @@ def uncommit(commitH, seedMat, mapping):
 # Arguement parsing
 def parse_args():
   parser = argparse.ArgumentParser(description="Zero-Knowledge Graph Isomorphism Prover")
-  subparsers = parser.add_subparsers(title='commands', dest='command', 
+  subparsers = parser.add_subparsers(title='commands', dest='command',
     description='For help on each command run: "%(prog)s <command> -h"')
   mkgraph_help = 'Generate a new random graph.'
   mkgraph_parser = subparsers.add_parser('MakeGraph', help=mkgraph_help, description=mkgraph_help)
@@ -157,6 +175,8 @@ def parse_args():
 
 ##########################################################
 # Commands
+
+# Generates random graph, and saves it in the file.
 def MakeGraph(size, out_file):
   print 'Generating new random graph of size ' + str(size) + '.'
   G1 = createGraph(size)
@@ -164,6 +184,10 @@ def MakeGraph(size, out_file):
   writeGraph(G1, out_file)
   print 'Output written to: ' + out_file.name
 
+# Given an input file, and size of the graph.
+# It then generates a randomly permuted subgraph
+# from the input graph. The subgraph is saved on the
+# file, along with the subgraphIso mapping.
 def MapIsoSubgraph(in_file, size, out_file, map_file):
   print 'Input source graph file: ' + in_file.name
   G1 = readGraph(in_file)
@@ -182,8 +206,13 @@ def MapIsoSubgraph(in_file, size, out_file, map_file):
   writeGraph(g2g1Mapping, map_file)
   print 'Output mapping written to: ' + map_file.name
 
+# Takes in G1 and G2 graph. A challenge file. IF g2g1mapping is
+# provided, then for all challenges the code is able to prove
+# either G1 <-> H isomorphism, or G2 <-> H sub graph isomorphism.
+# If the mapping is not given then, the code can prove either
+# G1 <-> H isopmophism, or G2 <-> sub graph isomorphism.
 def Prove(G1_file, G2_file, challenges_file, g2g1Mapping_file):
-  
+
   # Make fake G2 -> G1 mapping
   # for when Peggy is cheating!
   def guess_mapping(G1, G2):
@@ -218,7 +247,7 @@ def Prove(G1_file, G2_file, challenges_file, g2g1Mapping_file):
   print 'Number of rounds to perform: ' + str(len(challenges))
 
   print '\n=== Begining Protocol ==='
-  
+
   for i, challenge in enumerate(challenges):
     print "\n== Round " + str(i+1)
     print 'Peggy: Generating random H graph (isomorphic to the whole graph).'
@@ -233,14 +262,14 @@ def Prove(G1_file, G2_file, challenges_file, g2g1Mapping_file):
 
     print 'Peggy: Generating bit-commitments for entire H graph.'
     (seedMat, commitH) = bitCommit(H)
-    
+
     if challenge == 1:
       print "Victor: Challenge is G2 is isomorphic to a subgraph of H."
       print 'Peggy: Uncommiting corresponding nodes of G2 in H.'
       uncommit(commitH, seedMat, g2hMapping)
       if not graphIso(G2, H, g2hMapping):
         print "!!! Victor: Unable to prove subgraph isomorphism between G2 and H!"
-      else: 
+      else:
         print "Victor: Correctly verified G2 is isomorphic to a subgraph of H."
     else:
       print "Victor: Challenge is G1 is isomorphic to H."
@@ -248,9 +277,9 @@ def Prove(G1_file, G2_file, challenges_file, g2g1Mapping_file):
       uncommit(commitH, seedMat, g1hMapping)
       if not graphIso(G1, H, g1hMapping):
         print "!!! Victor: Unable to prove isomorphism between G1 and H!"
-      else: 
+      else:
         print "Victor: Correctly verified G1 is isomorphic to H."
-     
+
 
 ##########################################################
 # Main. Run the program :)
@@ -264,6 +293,6 @@ def main():
       MapIsoSubgraph(args.in_file, args.size, args.out_file, args.map_file)
     else:
       Prove(args.graph_file, args.subgraph_file, args.challenges_file, args.map_file)
-    
+
 # Start program :)
 main()
