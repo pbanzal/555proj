@@ -1,0 +1,31 @@
+Zero-Knowledge Graph Isomorphism Prover
+-----------------------------------------------------------------------------------
+commands:
+  For help on each command run: "subIso.py <command> -h"
+  {MakeGraph,MapIsoSubgraph,Prove}
+-----------------------------------------------------------------------------------
+  MakeGraph           Generate a new random graph.
+      arguments:
+        size        Number of nodes in the new graph.
+        out_file    Output file to save resulting graph.
+-----------------------------------------------------------------------------------
+  MapIsoSubgraph      Generate a new graph (with mapping) that is isomorphic
+                         to a random subgraph of the input graph.
+      arguments:
+        in_file     Input graph file (must be larger than <size> nodes).
+        size        Number of nodes in the new isomorphic subgraph.
+        out_file    Output file to save resulting isomorphic subgraph.
+        map_file    Output file to save resulting mapping between input graph and
+                    isomorphic subgraph.
+-----------------------------------------------------------------------------------
+  Prove               Perform the Zero Knowledge Graph Isomorphism protocol.
+      arguments:
+        graph_file          Input whole graph file.
+        subgraph_file       Input subgraph file.
+        challenges_file     Input challanges file.
+
+      optional arguments:
+        -map_file MAP_FILE  Input whole graph to subgraph mapping file (if this is
+                            not supplied then we assume you do not know the
+                            mapping!).
+------------------------------------------------------------------------------------
